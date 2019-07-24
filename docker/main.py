@@ -3,7 +3,7 @@
 # This script gets run whenever the user runs the docker with the argument "solve" or no argument.
 
 import sys, os, six, json, warnings, pimms, multiprocessing as mp, numpy as np
-import popeye, popeye.og_hrf as og_hrf
+import popeye, popeye.og_hrf as og_hrf, popeye.og as og
 import neuropythy as ny
 
 def warn(arg):
@@ -30,6 +30,8 @@ def solver(params):
     # go ahead and make the stimulus:
     stimulus_array = params['stimulus']
     stimulus_array = np.round(stimulus_array/np.max(stimulus_array)).astype('short')
+    # if the params tell us to invert y, we should do that now:
+    if params.get('invert_y', False): stimulus_array = np.flip(stimulus_array, axis=1)
     # figure out screen width from assumed distance of 50 and d2p:
     stimpx  = np.min(stimulus_array.shape[:2])
     stimdeg = stimpx / params['pixels_per_degree']
@@ -46,6 +48,7 @@ def solver(params):
     data = params['data']
     mask = params.get('mask', None)
     # okay, now go ahead and solve:
+    # note that changes/edits to the HRF should go here:
     hrf   = popeye.utilities.double_gamma_hrf
     model = og_hrf.GaussianModel(stimulus, hrf)
     model.hrf_delay = -0.25
@@ -59,7 +62,7 @@ def solver(params):
     pool.close()
     pool.join()
     # okay, reconstruct these into results volumes
-    res = {k:np.full(data.shape, np.nan)
+    res = {k:np.full(data.shape[:-1], np.nan)
            for k in ['x', 'y', 'sigma', 'baseline', 'gain', 'hrf_delay']}
     for (arg,fit) in zip(args, fits):
         ijk = arg[5]
@@ -67,7 +70,7 @@ def solver(params):
                          [fit.x, fit.y, fit.sigma, fit.baseline, fit.beta, fit.hrf_delay]):
             res[k][ijk] = v
     return res
-    
+
 # The idea is that we process each subdirectory of the input dir as an experiment directory unless
 # the input directory itself is an experiment directory:
 if os.path.isfile('/input/params.json'): test_dirs = ['/input']
@@ -104,7 +107,7 @@ for tdir in test_dirs:
         if 'screen_width' in params and 'screen_distance' in params:
             sw = params['screen_width']
             sd = params['screen_distance']
-            d2p = 2 * np.arctan2(sw/2, sd)
+            d2p = 180/np.pi * 2 * np.arctan2(sw/2, sd)
         else:
             warn('Could not deduce screen pixels per degree for test dir %s!' % (tdir,))
             continue
