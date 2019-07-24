@@ -31,7 +31,7 @@ def solver(params):
     stimulus_array = params['stimulus']
     stimulus_array = np.round(stimulus_array/np.max(stimulus_array)).astype('short')
     # if the params tell us to invert y, we should do that now:
-    if params.get('invert_y', False): stimulus_array = np.flip(stimulus_array, axis=1)
+    if params.get('invert_y', False): stimulus_array = np.flip(stimulus_array, axis=0)
     # figure out screen width from assumed distance of 50 and d2p:
     stimpx  = np.min(stimulus_array.shape[:2])
     stimdeg = stimpx / params['pixels_per_degree']
