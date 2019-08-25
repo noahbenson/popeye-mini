@@ -22,7 +22,7 @@ def _dofit(args):
 def solver(params):
     '''
     solver(params) accepts a parameter dictionary params and solves the pRF models implied by them.
-    
+
     The return value of solver is a dictionary of pRF parameters or statistics; e.g., a dictionary
     might contain keys 'r2', 'sigma', 'x', and 'y'.
     '''
@@ -57,19 +57,33 @@ def solver(params):
             for j in np.arange(data.shape[1])
             for k in np.arange(data.shape[2])
             if (mask is None or mask[i,j,k])]
+    # model = og.GaussianModel(stimulus, hrf)
+    # model.hrf_delay = -0.25
+    # args = [(og.GaussianFit, model, data[i,j,k], grids, grids, (i,j,k), grid_n, True, False)
+    #         for i in np.arange(data.shape[0])
+    #         for j in np.arange(data.shape[1])
+    #         for k in np.arange(data.shape[2])
+    #         if (mask is None or mask[i,j,k])]
     pool = mp.Pool()
     fits = pool.map(_dofit, args)
     pool.close()
     pool.join()
     # okay, reconstruct these into results volumes
-    res = {k:np.full(data.shape[:-1], np.nan)
-           for k in ['x', 'y', 'sigma', 'baseline', 'gain', 'hrf_delay']}
+    # res = {k:np.full(data.shape[:-1], np.nan)
+    res = {k:np.full(data.shape, np.nan)
+           for k in ['x', 'y', 'sigma', 'baseline', 'gain', 'hrf_delay', 'modelpred']}
     for (arg,fit) in zip(args, fits):
         ijk = arg[5]
-        for (k,v) in zip(['x', 'y', 'sigma', 'baseline', 'gain', 'hrf_delay'],
-                         [fit.x, fit.y, fit.sigma, fit.baseline, fit.beta, fit.hrf_delay]):
+        for (k,v) in zip(['x', 'y', 'sigma', 'baseline', 'gain', 'hrf_delay', 'modelpred'],
+                         [fit.x, fit.y, fit.sigma, fit.baseline, fit.beta, fit.hrf_delay, fit.prediction]):
             res[k][ijk] = v
     return res
+
+# Delete this 
+# fit = og.GaussianFit(model, data)
+# fit.prediction
+
+
 
 # The idea is that we process each subdirectory of the input dir as an experiment directory unless
 # the input directory itself is an experiment directory:
@@ -153,4 +167,3 @@ for tdir in test_dirs:
         raise
 
 sys.exit(0)
-
