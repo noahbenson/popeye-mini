@@ -5,7 +5,7 @@
 #   docker build --no-cache --tag nben/popeye `pwd`
 #
 
-FROM continuumio/anaconda:latest
+FROM continuumio/anaconda:2019.03
 
 LABEL MAINTAINER="Noah C. Benson <nben@nyu.edu>"
 
