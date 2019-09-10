@@ -9,14 +9,21 @@ FROM continuumio/anaconda:2019.03
 
 LABEL MAINTAINER="Noah C. Benson <nben@nyu.edu>"
 
-run apt-get update && apt-get upgrade -y && apt-get install -y gcc libgl1-mesa-glx
+ENV PATH "/opt/conda/bin:$PATH"
 
-RUN conda update --yes -n base conda && conda install --yes -c conda-forge py4j nibabel s3fs
-RUN conda install --yes -c conda-forge ipywidgets
-RUN pip install --upgrade setuptools
+RUN apt-get update && apt-get upgrade -y && apt-get install -y gcc libgl1-mesa-glx
 
-RUN conda install --yes numpy scipy matplotlib pandas
-RUN pip install pimms neuropythy popeye
+RUN /opt/conda/bin/conda update --yes -n base conda \
+ && /opt/conda/bin/conda install --yes -c conda-forge py4j nibabel s3fs
+RUN /opt/conda/bin/conda install --yes -c conda-forge ipywidgets
+RUN /opt/conda/bin/pip install --upgrade setuptools
+
+RUN /opt/conda/bin/conda install --yes numpy scipy matplotlib pandas
+RUN /opt/conda/bin/pip install pimms neuropythy
+RUN git clone https://github.com/kdesimone/popeye \
+ && cd popeye \
+ && /opt/conda/bin/pip install -r requirements.txt \
+ && /opt/conda/bin/python setup.py install
 
 COPY docker/main.sh /main.sh
 COPY docker/main.py /main.py
